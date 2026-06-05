@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MyDrive</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1117;--surface:#181c26;--surface2:#1e2330;
+      --border:#2a2f3d;--accent:#4ade80;--text:#e2e8f0;
+      --muted:#4a5568;--danger:#f87171;--blue:#60a5fa;--yellow:#fbbf24;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);min-height:100vh;font-family:'IBM Plex Sans',sans-serif;color:var(--text);}
+
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 28px;
+      border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;}
+    .logo{font-family:'IBM Plex Mono',monospace;font-size:1rem;color:var(--accent);}
+    .logo span{color:var(--muted);}
+    .topbar-right{display:flex;align-items:center;gap:12px;}
+    .user-badge{font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--muted);
+      background:var(--surface2);border:1px solid var(--border);padding:4px 12px;border-radius:999px;}
+    .user-badge strong{color:var(--accent);}
+    .logout-btn{font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--muted);
+      background:none;border:1px solid var(--border);padding:4px 12px;border-radius:6px;
+      cursor:pointer;text-decoration:none;transition:color .15s,border-color .15s;}
+    .logout-btn:hover{color:var(--danger);border-color:var(--danger);}
+
+    .main{max-width:980px;margin:0 auto;padding:32px 20px;}
+
+    .breadcrumb{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;
+      font-size:0.8rem;margin-bottom:22px;flex-wrap:wrap;}
+    .breadcrumb a{color:var(--accent);text-decoration:none;}
+    .breadcrumb a:hover{text-decoration:underline;}
+    .breadcrumb .sep{color:var(--muted);}
+    .breadcrumb .cur{color:var(--text);}
+
+    .toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;
+      font-family:'IBM Plex Mono',monospace;font-size:0.8rem;cursor:pointer;border:none;
+      transition:opacity .15s,background .15s,color .15s,border-color .15s;}
+    .btn-primary{background:var(--accent);color:#0f1117;font-weight:600;}
+    .btn-primary:hover{opacity:.88;}
+    .btn-outline{background:none;border:1px solid var(--border);color:var(--text);}
+    .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+    .btn-sm{padding:6px 14px;font-size:0.76rem;}
+
+    .dropzone{border:2px dashed var(--border);border-radius:10px;padding:22px;
+      text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:18px;}
+    .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(74,222,128,.04);}
+    .dropzone p{color:var(--muted);font-size:0.85rem;}
+    .dropzone p strong{color:var(--accent);}
+    #file-input{display:none;}
+
+    .pending-bar{display:none;align-items:center;gap:10px;padding:12px 18px;
+      background:var(--surface);border:1px solid var(--accent);border-radius:8px;margin-bottom:18px;}
+    .pending-bar.show{display:flex;}
+    .pending-name{flex:1;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+    .file-table{width:100%;border-collapse:collapse;}
+    .file-table thead th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+      letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+      padding:8px 12px;border-bottom:1px solid var(--border);}
+    .file-table tbody tr{border-bottom:1px solid rgba(42,47,61,.5);transition:background .12s;}
+    .file-table tbody tr:hover{background:var(--surface2);}
+    .file-table td{padding:10px 12px;font-size:0.85rem;vertical-align:middle;}
+
+    .cell-name{display:flex;align-items:center;gap:10px;}
+    .cell-icon{font-size:1.1rem;flex-shrink:0;}
+    .folder-link{color:var(--text);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;}
+    .folder-link:hover{color:var(--accent);}
+    .file-name-txt{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--text);}
+    .cell-size,.cell-date{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;white-space:nowrap;}
+    .cell-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+
+    .act-btn{padding:5px 11px;border-radius:5px;font-family:'IBM Plex Mono',monospace;
+      font-size:0.72rem;cursor:pointer;border:1px solid var(--border);background:none;
+      transition:color .12s,border-color .12s;text-decoration:none;display:inline-flex;align-items:center;}
+    .act-preview{color:var(--blue);}    .act-preview:hover{border-color:var(--blue);}
+    .act-dl{color:var(--accent);}       .act-dl:hover{border-color:var(--accent);}
+    .act-rename{color:var(--yellow);}   .act-rename:hover{border-color:var(--yellow);}
+    .act-del{color:var(--muted);}       .act-del:hover{color:var(--danger);border-color:var(--danger);}
+
+    .empty{text-align:center;padding:60px 20px;color:var(--muted);
+      border:1px dashed var(--border);border-radius:10px;}
+    .empty .big{font-size:2.5rem;margin-bottom:12px;}
+
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+      z-index:200;align-items:center;justify-content:center;}
+    .overlay.show{display:flex;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:360px;}
+    .modal h3{font-family:'IBM Plex Mono',monospace;font-size:1rem;margin-bottom:18px;}
+    .modal label{display:block;font-size:0.75rem;letter-spacing:.08em;text-transform:uppercase;
+      color:var(--muted);margin-bottom:6px;}
+    .modal input{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);
+      border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:0.88rem;
+      outline:none;margin-bottom:16px;}
+    .modal input:focus{border-color:var(--accent);}
+    .modal-btns{display:flex;gap:10px;justify-content:flex-end;}
+
+    .prev-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+      z-index:400;align-items:center;justify-content:center;padding:20px;}
+    .prev-overlay.show{display:flex;}
+    .prev-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+      width:100%;max-width:900px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;}
+    .prev-head{display:flex;align-items:center;justify-content:space-between;
+      padding:13px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .prev-head span{font-family:'IBM Plex Mono',monospace;font-size:0.83rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .prev-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;}
+    .prev-close:hover{color:var(--danger);}
+    .prev-body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .prev-body img{max-width:100%;max-height:68vh;object-fit:contain;border-radius:6px;}
+    .prev-body video,.prev-body audio{max-width:100%;}
+    .prev-body iframe{width:100%;height:68vh;border:none;background:#fff;border-radius:6px;}
+    .prev-body pre{width:100%;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;
+      color:var(--text);white-space:pre-wrap;word-break:break-all;line-height:1.7;}
+    .prev-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-shrink:0;}
+
+    .speed-toast{position:fixed;bottom:28px;right:28px;z-index:500;
+      background:var(--surface);border:1px solid var(--border);border-radius:10px;
+      padding:14px 18px;min-width:230px;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+    .speed-toast.show{display:block;}
+    .speed-label{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+    .speed-value{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:600;color:var(--accent);}
+    .speed-sub{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted);margin-top:4px;}
+    .speed-bar-wrap{height:4px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden;}
+    .speed-bar{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .3s;}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">my<span>/</span>drive</div>
+  <div class="topbar-right">
+    <div class="user-badge">logged in as <strong>{{ username }}</strong></div>
+    <a href="/logout" class="logout-btn">logout</a>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="breadcrumb">
+    {% for c in crumbs %}
+      {% if not loop.last %}
+        <a href="/drive/{{ c.rel }}">{{ c.name }}</a><span class="sep">/</span>
+      {% else %}
+        <span class="cur">{{ c.name }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">⬆ Upload files</button>
+    <button class="btn btn-outline" onclick="openFolderModal()">📁 New folder</button>
+  </div>
+
+  <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+    <p>☁️ &nbsp;Drop files here or <strong>click to browse</strong> — uploading into <strong style="color:var(--text)">{{ crumbs[-1].name }}</strong></p>
+  </div>
+
+  <form id="upload-form" method="POST" action="/upload" enctype="multipart/form-data">
+    <input type="hidden" name="current_rel" value="{{ rel }}" />
+    <input type="file" id="file-input" name="files" multiple />
+    <div class="pending-bar" id="pending-bar">
+      <span class="pending-name" id="pending-name">—</span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="cancelUpload()">✕ Cancel</button>
+      <button type="submit" class="btn btn-primary btn-sm">⬆ Upload now</button>
+    </div>
+  </form>
+
+  {% if items %}
+  <table class="file-table">
+    <thead>
+      <tr><th>Name</th><th>Size</th><th>Modified</th><th style="text-align:right">Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>
+          <div class="cell-name">
+            <span class="cell-icon">{{ item.icon }}</span>
+            {% if item.is_dir %}
+              <a class="folder-link" href="/drive/{{ item.rel }}">{{ item.name }}/</a>
+            {% else %}
+              <span class="file-name-txt">{{ item.name }}</span>
+            {% endif %}
+          </div>
+        </td>
+        <td class="cell-size">{{ item.size }}</td>
+        <td class="cell-date">{{ item.modified }}</td>
+        <td class="cell-actions">
+          {% if not item.is_dir and item.ptype != 'none' %}
+            <button class="act-btn act-preview" onclick="openPreview('{{ item.rel }}','{{ item.name }}','{{ item.ptype }}')">👁 preview</button>
+          {% endif %}
+          {% if not item.is_dir %}
+            <a href="#" class="act-btn act-dl" onclick="startDownload('/download/{{ item.rel }}','{{ item.name }}');return false;">↓ dl</a>
+          {% endif %}
+          <button class="act-btn act-rename" onclick="openRenameModal('{{ item.name }}')">✏ rename</button>
+          <form method="POST" action="/delete/{{ item.rel }}" style="display:inline" onsubmit="return confirm('Delete {{ item.name }}?')">
+            <button type="submit" class="act-btn act-del">🗑</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <div class="big">📂</div>
+    <p>This folder is empty — upload files or create a subfolder.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- New Folder Modal -->
+<div class="overlay" id="folder-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h3>📁 New folder</h3>
+    <form method="POST" action="/mkdir">
+      <input type="hidden" name="current_rel" value="{{ rel }}" />
+      <label>Folder name</label>
+      <input type="text" name="folder_name" id="folder-name-input" placeholder="e.g. Photos" required />
+      <div class="modal-btns">
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('folder-overlay').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="overlay" id="rename-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h3>✏ Rename</h3>
+    <form method="POST" action="/rename">
+      <input type="hidden" name="current_rel" value="{{ rel }}" />
+      <input type="hidden" name="old_name" id="rename-old" value="" />
+      <label>New name</label>
+      <input type="text" name="new_name" id="rename-new-input" placeholder="New name" required />
+      <div class="modal-btns">
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('rename-overlay').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Rename</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="prev-overlay" id="prev-overlay" onclick="if(event.target===this)closePrev()">
+  <div class="prev-box">
+    <div class="prev-head">
+      <span id="prev-title">Preview</span>
+      <button class="prev-close" onclick="closePrev()">✕</button>
+    </div>
+    <div class="prev-body" id="prev-body">
+      <p style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.85rem;">Loading…</p>
+    </div>
+    <div class="prev-foot">
+      <a id="prev-dl" href="#" class="btn btn-primary btn-sm">↓ Download</a>
+    </div>
+  </div>
+</div>
+
+<!-- Speed Toast -->
+<div class="speed-toast" id="speed-toast">
+  <div class="speed-label" id="speed-label">Upload speed</div>
+  <div class="speed-value" id="speed-value">— KB/s</div>
+  <div class="speed-sub" id="speed-sub">Calculating…</div>
+  <div class="speed-bar-wrap"><div class="speed-bar" id="speed-bar"></div></div>
+</div>
+
+<script>
+function fmtSpeed(b){if(b<1024)return b.toFixed(0)+' B/s';if(b<1048576)return(b/1024).toFixed(1)+' KB/s';if(b<1073741824)return(b/1048576).toFixed(2)+' MB/s';return(b/1073741824).toFixed(2)+' GB/s';}
+function fmtSize(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';if(b<1073741824)return(b/1048576).toFixed(1)+' MB';return(b/1073741824).toFixed(2)+' GB';}
+
+const toast=document.getElementById('speed-toast'),speedVal=document.getElementById('speed-value'),speedSub=document.getElementById('speed-sub'),speedBar=document.getElementById('speed-bar'),speedLbl=document.getElementById('speed-label');
+function showToast(lbl){speedLbl.textContent=lbl;speedVal.textContent='— KB/s';speedSub.textContent='Calculating…';speedBar.style.width='0%';toast.classList.add('show');}
+function hideToast(d=1400){setTimeout(()=>toast.classList.remove('show'),d);}
+
+const fileInput=document.getElementById('file-input'),pendingBar=document.getElementById('pending-bar'),dropzone=document.getElementById('dropzone'),uploadForm=document.getElementById('upload-form');
+
+fileInput.addEventListener('change',()=>{
+  if(!fileInput.files.length)return;
+  document.getElementById('pending-name').textContent=Array.from(fileInput.files).map(f=>f.name).join(', ');
+  pendingBar.classList.add('show');dropzone.style.display='none';
+});
+function cancelUpload(){fileInput.value='';pendingBar.classList.remove('show');dropzone.style.display='block';}
+dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('drag');});
+dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop',e=>{
+  e.preventDefault();dropzone.classList.remove('drag');
+  const dt=new DataTransfer();for(const f of e.dataTransfer.files)dt.items.add(f);
+  fileInput.files=dt.files;fileInput.dispatchEvent(new Event('change'));
+});
+
+uploadForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const fd=new FormData(uploadForm),xhr=new XMLHttpRequest();
+  let t0=Date.now(),ll=0,lt=t0;
+  showToast('Upload speed');
+  xhr.upload.addEventListener('progress',ev=>{
+    if(!ev.lengthComputable)return;
+    const now=Date.now(),dt=(now-lt)/1000;if(dt<0.3)return;
+    speedVal.textContent=fmtSpeed((ev.loaded-ll)/dt);ll=ev.loaded;lt=now;
+    const p=Math.round(ev.loaded/ev.total*100);
+    speedSub.textContent=p+'%  ·  '+fmtSize(ev.loaded)+' / '+fmtSize(ev.total);
+    speedBar.style.width=p+'%';
+  });
+  xhr.addEventListener('load',()=>{
+    speedVal.textContent='Done ✓';speedSub.textContent='Completed in '+((Date.now()-t0)/1000).toFixed(1)+'s';
+    speedBar.style.width='100%';hideToast(1200);setTimeout(()=>window.location.reload(),1300);
+  });
+  xhr.addEventListener('error',()=>{speedVal.textContent='Error ✗';speedSub.textContent='Upload failed';hideToast(2000);});
+  xhr.open('POST','/upload');xhr.send(fd);
+});
+
+function startDownload(url,filename){
+  showToast('Download speed');
+  let t0=Date.now(),ll=0,lt=t0;
+  fetch(url).then(res=>{
+    const total=parseInt(res.headers.get('Content-Length')||'0');
+    const reader=res.body.getReader(),chunks=[];
+    function read(){return reader.read().then(({done,value})=>{
+      if(done)return chunks;chunks.push(value);
+      const now=Date.now(),loaded=chunks.reduce((s,c)=>s+c.length,0),dt=(now-lt)/1000;
+      if(dt>=0.3){speedVal.textContent=fmtSpeed((loaded-ll)/dt);ll=loaded;lt=now;
+        const p=total?Math.round(loaded/total*100):0;
+        speedSub.textContent=total?p+'%  ·  '+fmtSize(loaded)+' / '+fmtSize(total):fmtSize(loaded);
+        speedBar.style.width=(p||20)+'%';}
+      return read();
+    });}
+    return read();
+  }).then(chunks=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks));a.download=filename;a.click();URL.revokeObjectURL(a.href);
+    speedVal.textContent='Done ✓';speedSub.textContent='Completed in '+((Date.now()-t0)/1000).toFixed(1)+'s';
+    speedBar.style.width='100%';hideToast(1500);
+  }).catch(()=>{speedVal.textContent='Error ✗';speedSub.textContent='Download failed';hideToast(2000);});
+}
+
+function openFolderModal(){document.getElementById('folder-overlay').classList.add('show');setTimeout(()=>document.getElementById('folder-name-input').focus(),50);}
+function openRenameModal(n){
+  document.getElementById('rename-old').value=n;
+  const inp=document.getElementById('rename-new-input');inp.value=n;
+  document.getElementById('rename-overlay').classList.add('show');
+  setTimeout(()=>{inp.focus();inp.select();},50);
+}
+function openPreview(rel,name,ptype){
+  document.getElementById('prev-title').textContent=name;
+  document.getElementById('prev-dl').href='/download/'+rel;
+  const body=document.getElementById('prev-body');
+  body.innerHTML='<p style="color:var(--muted);font-family:\'IBM Plex Mono\',monospace;font-size:.85rem;">Loading…</p>';
+  document.getElementById('prev-overlay').classList.add('show');
+  const url='/preview/'+rel;
+  if(ptype==='image')body.innerHTML=`<img src="${url}" alt="${name}"/>`;
+  else if(ptype==='video')body.innerHTML=`<video controls autoplay style="max-width:100%;max-height:66vh;border-radius:6px;"><source src="${url}"></video>`;
+  else if(ptype==='audio')body.innerHTML=`<audio controls autoplay><source src="${url}"></audio>`;
+  else if(ptype==='pdf')body.innerHTML=`<iframe src="${url}"></iframe>`;
+  else if(ptype==='text')fetch(url).then(r=>r.text()).then(t=>{const p=document.createElement('pre');p.textContent=t;body.innerHTML='';body.appendChild(p);});
+}
+function closePrev(){document.getElementById('prev-overlay').classList.remove('show');document.getElementById('prev-body').innerHTML='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePrev();});
+</script>
+</body>
+</html>

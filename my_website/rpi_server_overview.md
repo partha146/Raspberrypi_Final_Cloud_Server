@@ -1,6 +1,6 @@
 # Raspberry Pi Cloud Server: How it Works
 
-Your Raspberry Pi website is a completely different kind of beast compared to your Park Findr app! While Park Findr is a complex, modern "Single Page Application" built with React, your Raspberry Pi server is a **Classic Server-Side Rendered (SSR) Application** built with Python. 
+Raspberry Pi website is a completely different kind of beast compared to your Park Findr app! While Park Findr is a complex, modern "Single Page Application" built with React, your Raspberry Pi server is a **Classic Server-Side Rendered (SSR) Application** built with Python. 
 
 Here is exactly how it works and how it compares to your other app.
 
